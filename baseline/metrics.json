@@ -1,0 +1,35 @@
+{
+  "validation": {
+    "precision": 0.284,
+    "recall": 0.659,
+    "f1": 0.396,
+    "n": 1000,
+    "n_positive": 167
+  },
+  "test": {
+    "precision": 0.308,
+    "recall": 0.754,
+    "f1": 0.438,
+    "n": 1000,
+    "n_positive": 167
+  },
+  "slices": {
+    "month_to_month": {
+      "precision": 0.305,
+      "recall": 0.899,
+      "f1": 0.456,
+      "n": 558,
+      "n_positive": 129
+    },
+    "long_contract": {
+      "precision": 0.345,
+      "recall": 0.263,
+      "f1": 0.299,
+      "n": 442,
+      "n_positive": 38
+    }
+  },
+  "rows": 5000,
+  "churn_rate": 0.1668,
+  "data_md5": "f13720704495a6c84ea5d7a5efab0f1a"
+}

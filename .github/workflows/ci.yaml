@@ -1,0 +1,88 @@
+name: ci
+
+# I run the quick checks before training and only build an image when they all pass.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint Python code
+        run: ruff check .
+      - name: Validate churn data
+        run: python ci/validate_data.py data/churn.csv
+      - name: Train model
+        run: python train.py --data data/churn.csv --out model
+      - name: Check model quality
+        run: python ci/quality_gate.py
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Save trained model
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: churn-model
+          path: |
+            model/
+            metrics.json
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: churn-model
+          path: .
+      - name: Build Docker image
+        run: docker build -t churn-api:ci .
+      - name: Start service
+        run: docker run -d --rm --name churn-api -p 8000:8000 churn-api:ci
+      - name: Smoke-test service
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS http://localhost:8000/health >/dev/null; then break; fi
+            sleep 2
+          done
+          python -m pip install -r requirements-dev.txt
+          python ci/smoke_test.py http://localhost:8000
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Push image to GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA::7}"
+          docker tag churn-api:ci "$IMAGE"
+          docker push "$IMAGE"

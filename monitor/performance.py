@@ -6,8 +6,8 @@ Usage from the repository root (after `python run_weeks.py`):
 This is a teaching simulation. The weekly data is sampled from the original
 customer data, so results are not an independent production holdout.
 """
-from pathlib import Path
 import json
+from pathlib import Path
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression

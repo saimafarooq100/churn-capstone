@@ -14,7 +14,6 @@ import pandas as pd
 
 from monitor.drift import FEATURES, drift_report
 
-
 REFERENCE = Path("data/churn.csv")
 OUTPUT_DIR = Path("monitor/output")
 ROWS_PER_WEEK = 2000

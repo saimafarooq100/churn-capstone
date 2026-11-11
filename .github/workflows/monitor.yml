@@ -37,6 +37,14 @@ jobs:
       - name: Display the weekly drift summary
         run: cat monitor/output/summary.csv
 
+        
+      - name: Evaluate delayed-label model performance
+        run: python -m monitor.performance
+
+      - name: Display delayed-label performance summary
+        run: cat monitor/output/performance_summary.csv
+
+
       - name: Save weekly CSVs and monitoring summary
         uses: actions/upload-artifact@v4
         with:

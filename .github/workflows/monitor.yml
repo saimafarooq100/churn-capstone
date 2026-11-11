@@ -44,6 +44,15 @@ jobs:
       - name: Display delayed-label performance summary
         run: cat monitor/output/performance_summary.csv
 
+        
+      - name: Evaluate retraining decision rules
+        run: python -m monitor.decision
+
+      - name: Display retraining decisions
+        run: cat monitor/output/decisions.csv
+
+
+
 
       - name: Save weekly CSVs and monitoring summary
         uses: actions/upload-artifact@v4

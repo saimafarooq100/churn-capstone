@@ -1,0 +1,73 @@
+name: Week 7 Churn Monitoring
+
+on:
+  push:
+    branches: [main, week7-monitoring]
+    paths:
+      - 'run_weeks.py'
+      - 'monitor/**'
+      - 'data/churn.csv'
+      - '.github/workflows/monitor.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # Mondays at 06:00 UTC; scheduled runs use main
+
+permissions:
+  contents: read
+
+jobs:
+  simulate-and-check-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+   
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Generate 14 weeks of simulated data and calculate PSI
+        run: python run_weeks.py
+
+      - name: Display the weekly drift summary
+        run: cat monitor/output/summary.csv
+
+        
+      - name: Evaluate delayed-label model performance
+        run: python -m monitor.performance
+
+      - name: Display delayed-label performance summary
+        run: cat monitor/output/performance_summary.csv
+
+        
+      - name: Evaluate retraining decision rules
+        run: python -m monitor.decision
+
+      - name: Display retraining decisions
+        run: cat monitor/output/decisions.csv
+        
+      - name: Retrain challenger and evaluate quality gate
+        run: python -m monitor.retrain
+
+      - name: Display champion challenger comparison
+        run: cat monitor/output/retraining_summary.csv
+
+
+      - name: Run Week 7 automated monitoring tests
+        run: python -m pytest -q tests/test_monitor.py
+
+
+
+
+      - name: Save weekly CSVs and monitoring summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: churn-week7-drift-simulation
+          path: monitor/output/
+          if-no-files-found: error

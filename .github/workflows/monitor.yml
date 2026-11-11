@@ -50,6 +50,13 @@ jobs:
 
       - name: Display retraining decisions
         run: cat monitor/output/decisions.csv
+        
+      - name: Retrain challenger and evaluate quality gate
+        run: python -m monitor.retrain
+
+      - name: Display champion challenger comparison
+        run: cat monitor/output/retraining_summary.csv
+
 
 
 
